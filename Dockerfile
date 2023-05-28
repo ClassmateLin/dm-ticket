@@ -7,7 +7,7 @@ RUN USER=root cargo new dm-ticket
 
 RUN  sed -i "s/dl-cdn.alpinelinux.org/mirrors.ustc.edu.cn/g" /etc/apk/repositories;
 
-RUN apk add musl-dev openssl openssl-dev pkgconfig upx git
+RUN apk add musl-dev openssl openssl-dev pkgconfig upx git curl
 
 COPY Cargo.toml Cargo.lock /usr/src/dm-ticket/
 
