@@ -17,6 +17,7 @@ pub struct Account {
     pub ticket: Ticket,
     pub interval: Option<u64>,
     pub earliest_submit_time: Option<i64>,
+    pub request_time: Option<i64>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
