@@ -294,6 +294,10 @@ impl DmTicket {
             .parse::<i64>()?;
 
         let request_time = self.account.request_time.unwrap_or(-1);
+
+        let retry_times =  self.account.retry_times.unwrap_or(2);
+        let retry_interval = self.account.retry_interval.unwrap_or(100);
+
         if request_time > 0 {
             start_timestamp = request_time
         }
@@ -331,12 +335,17 @@ impl DmTicket {
                 }
 
                 _ = r.recv() => {
-                    for _ in 0..2 {
+
+                    // 多次重试
+                    for _ in 0..retry_times {
                         if let Ok(res) = self.buy(&item_id, &sku_id).await {
                             if res {// 抢购成功, 退出
                                 return Ok(());
                             }
                         }
+                        
+                        // 重试间隔 
+                        tokio::time::sleep(Duration::from_millis(retry_interval)).await;
                     }
                     return Ok(());
                 }

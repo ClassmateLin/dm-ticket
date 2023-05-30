@@ -18,6 +18,8 @@ pub struct Account {
     pub interval: Option<u64>,
     pub earliest_submit_time: Option<i64>,
     pub request_time: Option<i64>,
+    pub retry_times : Option<u8>,
+    pub retry_interval : Option<u64>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

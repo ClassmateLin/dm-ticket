@@ -12,6 +12,12 @@ accounts:
       # 1685415600100
       request_time: -1
 
+      # 重试次数 
+      retry_times: 2
+
+      # 重试间隔 单位毫秒
+      retry_interval: 100
+
       ticket:
         # 需要抢购的门票ID, 门票详情页URL中的itemId.如:https://m.damai.cn/damai/detail/item.html?utm=&itemId=710947802955
         id: "721069251830"
