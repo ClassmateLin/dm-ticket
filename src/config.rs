@@ -18,8 +18,11 @@ pub struct Account {
     pub interval: Option<u64>,
     pub earliest_submit_time: Option<i64>,
     pub request_time: Option<i64>,
-    pub retry_times: Option<u8>,
-    pub retry_interval: Option<u64>,
+    pub retry_times : Option<u8>,
+    pub retry_interval : Option<u64>,
+    pub monitor : Option<bool>,
+    pub dingtalk_notify : Option<bool>,
+    pub dingtalk_token : Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

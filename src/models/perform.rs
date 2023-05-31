@@ -49,6 +49,9 @@ pub struct Sku {
     pub price_name: String,
 
     pub price: String,
+
+    #[serde(rename = "skuSalable")]
+    pub sku_salable : String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

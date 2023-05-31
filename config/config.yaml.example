@@ -1,5 +1,5 @@
 accounts:
-    # .damai.cn中的cookie完整字符串
+    # .damai.cn中的cookie字符串
     - cookie: ""
       remark: 账号1
       # 抢票轮训间隔, 单位毫秒
@@ -18,13 +18,22 @@ accounts:
       # 重试间隔 单位毫秒
       retry_interval: 100
 
+      # 余票监控
+      monitor: false
+
+      # 钉钉机器人通知
+      dingtalk_notify: false
+      # 钉钉机器人的token
+      dingtalk_token: token
+
       ticket:
         # 需要抢购的门票ID, 门票详情页URL中的itemId.如:https://m.damai.cn/damai/detail/item.html?utm=&itemId=710947802955
         id: "721069251830"
         # 需要抢购的门票数量
-        num: 1
+        num: 3
         # 需要抢购的场次序号.
         sessions: 1
         # 需要抢购的票档序号
-        grade: 1
+        grade: 5
+
 

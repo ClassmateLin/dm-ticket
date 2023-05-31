@@ -16,6 +16,7 @@ use crate::{
 use anyhow::{anyhow, Result};
 use chrono::{DateTime, Local};
 use log::{debug, error, info, warn};
+use reqwest::Client;
 use serde_json::json;
 use tokio::signal;
 
@@ -176,7 +177,6 @@ impl DmTicket {
         Ok(res)
     }
 
-    // 获取场次/票档信息
     pub async fn get_perform_info(
         &self,
         ticket_id: String,
@@ -199,7 +199,6 @@ impl DmTicket {
         Ok(perform_info)
     }
 
-    // 购买流程
     pub async fn buy(&self, item_id: &String, sku_id: &String) -> Result<bool> {
         let start = Instant::now();
 
@@ -235,7 +234,6 @@ impl DmTicket {
         }
     }
 
-    // 毫秒转时分秒
     pub fn ms_to_hms(&self, ms: i64) -> (u64, u64, f64) {
         let sec = ms as f64 / 1000.0;
         let hour = (sec / 3600.0) as u64;
@@ -245,11 +243,18 @@ impl DmTicket {
         (hour, min, sec)
     }
 
-    // 程序入口
+
     pub async fn run(&self) -> Result<()> {
         let ticket_id = self.account.ticket.id.clone();
         let perfomr_idx = self.account.ticket.sessions - 1; // 场次索引
         let sku_idx = self.account.ticket.grade - 1; // 票档索引
+        let monitor = self.account.monitor.unwrap_or(false);
+
+        // 是否监控
+        if monitor {
+            return self.monitor().await;
+        }
+
 
         info!("正在获取演唱会信息...");
         let ticket_info = self.get_ticket_info(ticket_id.clone()).await?;
@@ -290,7 +295,7 @@ impl DmTicket {
             .item
             .item
             .sell_start_time_str;
-        let mut start_timestamp = ticket_info
+        let mut  start_timestamp = ticket_info
             .detail_view_component_map
             .item
             .item
@@ -299,7 +304,7 @@ impl DmTicket {
 
         let request_time = self.account.request_time.unwrap_or(-1);
 
-        let retry_times = self.account.retry_times.unwrap_or(2);
+        let retry_times =  self.account.retry_times.unwrap_or(2);
         let retry_interval = self.account.retry_interval.unwrap_or(100);
 
         if request_time > 0 {
@@ -316,7 +321,6 @@ impl DmTicket {
         let interval = self.account.interval.unwrap_or(50);
         let earliest_submit_time = self.account.earliest_submit_time.unwrap_or(1);
 
-        // 轮询等待开抢
         loop {
             tokio::select! {
                 _ = signal::ctrl_c() => {
@@ -336,6 +340,7 @@ impl DmTicket {
                         let _ =io::stdout().flush();
                     }
 
+                    // info!("剩余时间毫秒:{}", time_left_millis);
                 }
 
                 _ = r.recv() => {
@@ -344,11 +349,12 @@ impl DmTicket {
                     for _ in 0..retry_times {
                         if let Ok(res) = self.buy(&item_id, &sku_id).await {
                             if res {// 抢购成功, 退出
+                                self.send_dintalk("抢票成功!!").await;
                                 return Ok(());
                             }
                         }
 
-                        // 重试间隔
+                        // 重试间隔 
                         tokio::time::sleep(Duration::from_millis(retry_interval)).await;
                     }
                     return Ok(());
@@ -356,4 +362,118 @@ impl DmTicket {
             }
         }
     }
+
+    pub async fn  monitor(&self) -> Result<()>  {
+
+        let ticket_id = self.account.ticket.id.clone();
+        let perfomr_idx = self.account.ticket.sessions - 1; // 场次索引
+        let sku_idx = self.account.ticket.grade - 1; // 票档索引
+
+        
+        info!("正在获取演唱会信息...");
+        let ticket_info = self.get_ticket_info(ticket_id.clone()).await?;
+
+     
+
+        let perform_id = ticket_info
+            .detail_view_component_map
+            .item
+            .item
+            .perform_bases[perfomr_idx]
+            .performs[0]
+            .perform_id
+            .clone();
+
+      
+
+        info!("正在获取场次/票档信息...");
+        let  perform_info = self.get_perform_info(ticket_id.clone(), perform_id.clone()).await?;
+        let sku_id = perform_info.perform.sku_list[sku_idx].sku_id.clone();
+        let item_id = perform_info.perform.sku_list[sku_idx].item_id.clone();
+
+
+
+        let interval = self.account.interval.unwrap_or(50);
+        
+
+        let retry_times =  self.account.retry_times.unwrap_or(2);
+        let retry_interval = self.account.retry_interval.unwrap_or(100);
+        let (s, r) = async_channel::unbounded::<bool>();
+
+
+        loop {
+            tokio::select! {
+                _ = signal::ctrl_c() => {
+                    info!("CTRL-C, 退出程序...");
+                    return Ok(());
+                }
+
+                _ = tokio::time::sleep(Duration::from_millis(interval)) => {
+                    info!("正在获取场次/票档信息...");
+                    let perform_info = self.get_perform_info(ticket_id.clone(), perform_id.clone()).await?;
+                    let salable: std::result::Result<bool, std::str::ParseBoolError> = perform_info.perform.sku_list[sku_idx].sku_salable.clone().parse::<bool>();
+            
+
+                    if salable.unwrap_or(false) {                        
+                        let _ = s.send(true).await;
+                        self.send_dintalk("有票了！").await;
+                    }else{
+                        print!("余票监控中\r\n");
+                        let _ =io::stdout().flush();
+                    }
+
+                    // info!("剩余时间毫秒:{}", time_left_millis);
+                }
+
+                _ = r.recv() => {
+
+                    // 多次重试
+                    for _ in 0..retry_times {
+                        if let Ok(res) = self.buy(&item_id, &sku_id).await {
+                            if res {// 抢购成功, 退出
+                                self.send_dintalk("抢票成功!!").await;
+                                return Ok(());
+                            }
+                        }
+
+                        // 重试间隔 
+                        tokio::time::sleep(Duration::from_millis(retry_interval)).await;
+                    }
+                    return Ok(());
+                }
+            }
+        }
+
+    }
+
+    async fn send_dintalk(&self,msg:&str){
+        if !self.account.dingtalk_notify.unwrap_or(false) {
+            print!("钉钉通知关闭\r\n");
+            return;
+        }
+
+        let token = self.account.dingtalk_token.clone().unwrap_or(String::from(""));
+        
+        if token == "" {
+            print!("钉钉token为空\r\n");
+
+            return;
+        }
+
+        let webhook_url =format!("{}{}","https://oapi.dingtalk.com/robot/send?access_token=", token);
+
+        let client = Client::new();
+        let response = client.post(webhook_url)
+            .json(&json!({
+                "msgtype": "text",
+                "text": {
+                    "content": format!("{} {}",self.account.remark,msg)
+                }
+            }))
+            .send()
+            .await;
+
+        debug!("Response: {:?}", response);
+    }
+
 }
