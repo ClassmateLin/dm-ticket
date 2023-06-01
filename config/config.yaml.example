@@ -18,8 +18,18 @@ accounts:
       # 重试间隔 单位毫秒
       retry_interval: 100
 
-      # 余票监控
-      monitor: false
+      # 监控配置 可以监控多场次 多票档  按优先顺序抢票 不支持同时抢多张，同时抢可能会导致异常
+      monitor:
+        # 是否开启监控
+        enable: false
+        # 监控间隔 单位毫秒
+        interval: 1000
+        # 监控的场次 下面的配置就是监控 1场次的 5票档 和 3票档  2场次的 2票档和1票档  按配置顺序是否于余票进行抢票
+        sessions:
+          - index: 1
+            grades: 5,3
+          - index: 2
+            grades: 2,1
 
       # 钉钉机器人通知
       dingtalk_notify: false
