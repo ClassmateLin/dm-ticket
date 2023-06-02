@@ -47,7 +47,7 @@
 
 1. 获取项目: `git clone https://github.com/ClassmateLin/dm-ticket.git`
 
-2. 复制配置: `cd dm-ticket && cp config/config.yaml.example cpnfig/config.yaml`
+2. 复制配置: `cd dm-ticket && cp config/config.yaml.example config/config.yaml`
 
 3. 运行依赖容器: `docker-compose -f docker-compose.dev.yml up  -d`
 
