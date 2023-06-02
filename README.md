@@ -20,8 +20,8 @@
 
 ### 使用docker
 
-- 下载docker-compose配置文件: `wget https://github.com/ClassmateLin/dm-ticket/releases/download/v0.1.3/dm-ticket.zip`
-- 解压zip: `unzip dm-ticket.zip && cd dm-ticket`
+- 下载docker-compose配置文件: `wget https://github.com/ClassmateLin/dm-ticket/releases/download/v1.0.4/dm-ticket-v1.0.4.tar.gz`
+- 解压zip: `tar -zxvf dm-ticket-v1.0.4.tar.gz && cd dm-ticket`
 - 运行容器: `docker-compose up -d`
 - 修改配置: `vim config/config.yaml`, 配置项在config/config.yaml中有详细注释。
 - 运行脚本: `docker exec -it dm-ticket dm-ticket`
